@@ -17,6 +17,14 @@ task("accounts", "Prints the list of accounts", async () => {
  * @type import('hardhat/config').HardhatUserConfig
  */
 module.exports = {
-  solidity: "0.7.3",
+  solidity: {
+    version: '0.8.0',
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 800, // assuming we want to lower user gas costs instead of deployment costs.
+      },
+    },
+  }
 };
 
