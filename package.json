@@ -1,13 +1,16 @@
 {
   "name": "@crisog/rock-paper-scissors",
   "version": "0.1.0",
-  "description": "",
+  "description": "Alice and Bob can play the classic game of rock, paper, scissors using ERC20 (of your choosing).",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "solidity",
+    "game"
+  ],
+  "author": "CrisOG",
   "license": "ISC",
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
@@ -16,5 +19,8 @@
     "ethereum-waffle": "^3.3.0",
     "ethers": "^5.1.4",
     "hardhat": "^2.3.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.1.0"
   }
 }
