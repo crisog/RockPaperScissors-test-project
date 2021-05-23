@@ -151,8 +151,8 @@ contract RockPaperScissors {
     }
 
     /**
-    * @dev Joins an already created round that is not full.
-    * @param _roundId ID of the round instance to join
+    * @dev Internal function to check if user joined a round
+    * @param _roundId ID of the round instance to check
     */
     function _ensurePlayerJoined(uint256 _roundId, address _player) internal view {
         Round storage round = roundRecords[_roundId];
