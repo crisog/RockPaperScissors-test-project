@@ -166,7 +166,7 @@ contract RockPaperScissors {
     * @dev Joins an already created round that is not full.
     * @param _roundId ID of the round instance to join
     */
-    function join(uint256 _roundId) external {
+    function join(uint256 _roundId) external roundExists(_roundId) {
         Round storage round = roundRecords[_roundId];
         require(msg.sender != round.bob, ERROR_ROUND_PLAYER_ALREADY_EXIST);
         require(round.alice == address(0), ERROR_ROUND_IS_FULL);
