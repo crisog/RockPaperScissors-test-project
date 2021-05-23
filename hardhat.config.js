@@ -1,6 +1,6 @@
 require("@nomiclabs/hardhat-ethers");
 
-task("hashedMove", "Generates a rock hashed move")
+task("hashedMove", "Generates a hashed move")
   .addParam("type", "Type of the move: [1-3] - rock, paper and scissors respectively.")
   .setAction(async ({ type: inmoveType }, { ethers }) => {
   const { id: keccak256, solidityKeccak256: soliditySha3 } = ethers.utils
