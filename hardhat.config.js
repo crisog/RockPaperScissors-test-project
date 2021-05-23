@@ -1,17 +1,17 @@
-require("@nomiclabs/hardhat-waffle");
+require("@nomiclabs/hardhat-ethers");
 
-// This is a sample Hardhat task. To learn how to create your own go to
-// https://hardhat.org/guides/create-task.html
-task("accounts", "Prints the list of accounts", async () => {
-  const accounts = await ethers.getSigners();
+task("hashedMove", "Generates a rock hashed move")
+  .addParam("type", "Type of the move: [1-3] - rock, paper and scissors respectively.")
+  .setAction(async ({ type: inmoveType }, { ethers }) => {
+  const { id: keccak256, solidityKeccak256: soliditySha3 } = ethers.utils
+    
+  const salt = keccak256("4rk0zt1m9");
+  const move = Number(inmoveType);
+  const hashedMove = soliditySha3(['uint8', 'bytes32'], [move, salt]);
+  
+  console.log(hashedMove);
 
-  for (const account of accounts) {
-    console.log(account.address);
-  }
 });
-
-// You need to export an object to set up your config
-// Go to https://hardhat.org/config/ to learn more
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
@@ -25,6 +25,12 @@ module.exports = {
         runs: 800, // assuming we want to lower user gas costs instead of deployment costs.
       },
     },
-  }
+  },
+  paths: {
+    sources: "./contracts",
+    tests: "./test",
+    cache: "./cache",
+    artifacts: "./artifacts"
+  },
 };
 
