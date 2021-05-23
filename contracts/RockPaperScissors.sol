@@ -12,6 +12,8 @@ contract RockPaperScissors {
 
     string private constant ERROR_ROUND_DOES_NOT_EXIST = "ERROR_ROUND_DOES_NOT_EXIST";
     string private constant ERROR_ROUND_ALREADY_EXISTS = "ERROR_ROUND_ALREADY_EXISTS";
+    string private constant ERROR_ROUND_IS_FULL = "ERROR_ROUND_IS_FULL";
+    string private constant ERROR_ROUND_PLAYER_DOES_NOT_EXIST = "ERROR_ROUND_PLAYER_DOES_NOT_EXIST";
     string private constant ERROR_MOVE_ALREADY_COMMITTED = "ERROR_MOVE_ALREADY_COMMITTED";
     string private constant ERROR_NOT_ENOUGH_TOKENS = "ERROR_NOT_ENOUGH_TOKENS";
     string private constant ERROR_MOVE_ALREADY_REVEALED = "ERROR_MOVE_ALREADY_REVEALED";
@@ -38,9 +40,11 @@ contract RockPaperScissors {
     
     struct Round {
         uint8 initialized;
-        uint8 winningMove;                   
+        uint8 winningMove;           
+        uint8 playersCount;        
         uint8 maxAllowedMoves; 
         uint256 wageredTokensAmount;
+        mapping (address => bool) players;
         mapping (address => CastedMove) moves;      // Mapping of players addresses to their casted move
     }
 
@@ -48,6 +52,7 @@ contract RockPaperScissors {
     mapping (uint256 => Round) internal roundRecords;
 
     event RoundCreated(uint256 indexed roundId, uint256 wagerAmount);
+    event PlayerJoined(uint256 indexed roundId, address indexed player);
     event MoveCommitted(uint256 indexed roundId, address indexed player, bytes32 commitment);
     event MoveRevealed(uint256 indexed roundId, address indexed player, uint8 revealedMove, address revealer);
 
@@ -91,6 +96,7 @@ contract RockPaperScissors {
         require(!_existsRound(round), ERROR_ROUND_ALREADY_EXISTS);
 
         round.initialized = ROUND_INITIALIZED;
+        round.players[msg.sender] = true;
         round.maxAllowedMoves = MAX_POSSIBLE_MOVES;
         emit RoundCreated(_roundId, _wagerAmount);
     }
@@ -101,22 +107,13 @@ contract RockPaperScissors {
     * @param _commitment Hashed committed move to be stored for future reveal
     */
     function commit(uint256 _roundId, bytes32 _commitment) external roundExists(_roundId) {
+        _ensurePlayerJoined(_roundId, msg.sender);
+        
         CastedMove storage castedMove = roundRecords[_roundId].moves[msg.sender];
         require(castedMove.committedMove == bytes32(0), ERROR_MOVE_ALREADY_COMMITTED);
-        _ensurePlayerCanCommit(_roundId, msg.sender);
 
         castedMove.committedMove = _commitment;
         emit MoveCommitted(_roundId, msg.sender, _commitment);
-    }
-
-    /**
-    * @dev Internal function to ensure a player can commit a move
-    * @param _roundId ID of the round instance to be checked
-    * @param _player Address of the player willing to commit a move
-    */
-    function _ensurePlayerCanCommit(uint256 _roundId, address _player) internal view {
-        Round storage round = roundRecords[_roundId];
-        require(WETH_ADDRESS.balanceOf(_player) >= round.wageredTokensAmount, ERROR_NOT_ENOUGH_TOKENS);
     }
 
     /**
@@ -127,6 +124,8 @@ contract RockPaperScissors {
     * @param _salt Salt to decrypt and validate the committed move of the player
     */
     function reveal(uint256 _roundId, address _player, uint8 _revealedMove, bytes32 _salt) external roundExists(_roundId) {
+        _ensurePlayerJoined(_roundId, msg.sender);
+        
         Round storage round = roundRecords[_roundId];
         CastedMove storage castedMove = round.moves[_player];
         _checkValidSalt(castedMove, _revealedMove, _salt);
@@ -134,6 +133,28 @@ contract RockPaperScissors {
 
         castedMove.revealedMove = _revealedMove;
         emit MoveRevealed(_roundId, _player, _revealedMove, msg.sender);
+    }
+
+    /**
+    * @dev Joins an already created round that is not full.
+    * @param _roundId ID of the round instance to join
+    */
+    function join(uint256 _roundId) external {
+        Round storage round = roundRecords[_roundId];
+        require(round.playersCount < 2, ERROR_ROUND_IS_FULL);
+        require(WETH_ADDRESS.balanceOf(msg.sender) >= round.wageredTokensAmount, ERROR_NOT_ENOUGH_TOKENS);
+        
+        round.players[msg.sender] = true;
+        emit PlayerJoined(_roundId, msg.sender);
+    }
+
+    /**
+    * @dev Joins an already created round that is not full.
+    * @param _roundId ID of the round instance to join
+    */
+    function _ensurePlayerJoined(uint256 _roundId, address _player) internal view {
+        Round storage round = roundRecords[_roundId];
+        require(round.players[_player], ERROR_ROUND_PLAYER_DOES_NOT_EXIST);
     }
 
      /**
