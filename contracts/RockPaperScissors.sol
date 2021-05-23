@@ -96,9 +96,11 @@ contract RockPaperScissors {
         require(!_existsRound(round), ERROR_ROUND_ALREADY_EXISTS);
 
         round.initialized = ROUND_INITIALIZED;
-        round.players[msg.sender] = true;
         round.maxAllowedMoves = MAX_POSSIBLE_MOVES;
+        round.players[msg.sender] = true;
+        round.playersCount += 1;
         emit RoundCreated(_roundId, _wagerAmount);
+        emit PlayerJoined(_roundId, msg.sender);
     }
 
     /**
