@@ -1,5 +1,7 @@
 # RockPaperScissors test project
 
+NOTE; this project is unfinished. I'm looking forward to adding more tests + a token recovery method if opponent goes unresponsive. I haven't finished testing all the scenarios, some may fail.
+
 You will create a smart contract named `RockPaperScissors` whereby:  
 Alice and Bob can play the classic game of rock, paper, scissors using ERC20 (of your choosing).    
   
