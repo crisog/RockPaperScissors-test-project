@@ -6,7 +6,8 @@
   "scripts": {
     "compile": "npx hardhat compile",
     "test": "npx hardhat test",
-    "flatten": "npx hardhat flatten contracts/RockPaperScissors.sol > contracts/.flatten/FlattenedRockPaperScissors.sol"
+    "flatten": "npx hardhat flatten contracts/RockPaperScissors.sol > contracts/.flatten/FlattenedRockPaperScissors.sol",
+    "format": "npx hardhat format"
   },
   "keywords": [
     "solidity",
@@ -24,6 +25,8 @@
     "hardhat": "^2.3.0"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.1.0"
+    "@openzeppelin/contracts": "^4.1.0",
+    "hardhat-prettier": "0.0.1",
+    "prettier": "^2.3.0"
   }
 }
