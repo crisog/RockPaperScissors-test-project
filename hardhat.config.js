@@ -39,7 +39,7 @@ module.exports = {
   },
   networks: {
     rinkeby: {
-      url: 'https://rinkeby.infura.io/v3/<INFURA_ID>',
+      url: `https://rinkeby.infura.io/v3/${process.env.INFURA_ID}`,
       accounts: [process.env.PRIVATE_KEY]
     }
   },
