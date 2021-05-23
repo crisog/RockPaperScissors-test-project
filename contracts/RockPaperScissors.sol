@@ -31,7 +31,7 @@ contract RockPaperScissors {
      *  3. Scissors
      */
     uint8 internal constant MAX_POSSIBLE_MOVES = uint8(3);
-    IERC20 constant internal WETH_ADDRESS = IERC20(0xc778417E063141139Fce010982780140Aa0cD5Ab);
+    IERC20 constant internal WAGER_TOKEN = IERC20(0xc778417E063141139Fce010982780140Aa0cD5Ab); // WETH
     
     struct CastedMove {
         bytes32 committedMove;                         // Hash of the move casted by the player
@@ -43,7 +43,7 @@ contract RockPaperScissors {
         uint8 winningMove;           
         uint8 playersCount;        
         uint8 maxAllowedMoves; 
-        uint256 wageredTokensAmount;
+        uint256 wagerTokenAmount;
         mapping (address => bool) players;
         mapping (address => CastedMove) moves;      // Mapping of players addresses to their casted move
     }
@@ -97,9 +97,11 @@ contract RockPaperScissors {
 
         round.initialized = ROUND_INITIALIZED;
         round.maxAllowedMoves = MAX_POSSIBLE_MOVES;
+        round.wagerTokenAmount = _wagerAmount;
+        emit RoundCreated(_roundId, _wagerAmount);
+        
         round.players[msg.sender] = true;
         round.playersCount += 1;
-        emit RoundCreated(_roundId, _wagerAmount);
         emit PlayerJoined(_roundId, msg.sender);
     }
 
@@ -108,11 +110,13 @@ contract RockPaperScissors {
     * @param _roundId ID of the round instance to commit a move to
     * @param _commitment Hashed committed move to be stored for future reveal
     */
-    function commit(uint256 _roundId, bytes32 _commitment) external roundExists(_roundId) {
+    function commit(uint256 _roundId, bytes32 _commitment) external payable roundExists(_roundId) {
         _ensurePlayerJoined(_roundId, msg.sender);
         
         CastedMove storage castedMove = roundRecords[_roundId].moves[msg.sender];
         require(castedMove.committedMove == bytes32(0), ERROR_MOVE_ALREADY_COMMITTED);
+
+        WAGER_TOKEN.transferFrom(msg.sender, address(this), roundRecords[_roundId].wagerTokenAmount);
 
         castedMove.committedMove = _commitment;
         emit MoveCommitted(_roundId, msg.sender, _commitment);
@@ -144,7 +148,7 @@ contract RockPaperScissors {
     function join(uint256 _roundId) external {
         Round storage round = roundRecords[_roundId];
         require(round.playersCount < 2, ERROR_ROUND_IS_FULL);
-        require(WETH_ADDRESS.balanceOf(msg.sender) >= round.wageredTokensAmount, ERROR_NOT_ENOUGH_TOKENS);
+        require(WAGER_TOKEN.balanceOf(msg.sender) >= round.wagerTokenAmount, ERROR_NOT_ENOUGH_TOKENS);
         
         round.players[msg.sender] = true;
         emit PlayerJoined(_roundId, msg.sender);
@@ -161,14 +165,27 @@ contract RockPaperScissors {
 
      /**
     * @dev Get the winner of a round instance. If the winner is missing, that means no one played in
-    *      the given round instance, it will be considered refused.
+    *      the given round instance.
     * @param _roundId ID of the round instance querying the winning outcome of
-    * @return Winner of the given round instance or refused in case it's missing
+    * @return Winner of the given round instance or missing
     */
     function getWinningMove(uint256 _roundId) external view roundExists(_roundId) returns (uint8) {
         Round storage round = roundRecords[_roundId];
         uint8 winningMove = round.winningMove;
         return winningMove == REVEALED_MOVE_MISSING ? REVEALED_MOVE_MISSING : winningMove;
+    }
+
+    /**
+    * @dev Internal function to check if a move is the last move
+    * @param _roundId ID of the round instance to check
+    */
+    function _isLastMove(uint256 _roundId) internal view {
+        Round storage round = roundRecords[_roundId];
+
+    }
+
+    function computeRound(uint256 _roundId) public roundExists(_roundId) returns (address) {
+        
     }
 
     /**
