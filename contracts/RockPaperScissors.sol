@@ -17,12 +17,17 @@ contract RockPaperScissors {
     string private constant ERROR_MOVE_ALREADY_REVEALED = "ERROR_MOVE_ALREADY_REVEALED";
     string private constant ERROR_COMMITTED_MOVE_REFUSED = "ERROR_COMMITTED_MOVE_REFUSED";
     string private constant ERROR_INVALID_HASHING_SALT = "ERROR_INVALID_HASHING_SALT";
-    string private constant ERROR_INVALID_COMMITED_MOVE = "ERROR_INVALID_COMMITED_MOVE";
+    string private constant ERROR_INVALID_REVEALED_MOVE = "ERROR_INVALID_REVEALED_MOVE";
 
-    uint internal constant REVEALED_MOVE_MISSING = uint8(0);
     uint8 internal constant ROUND_INITIALIZED = uint8(1);
-    uint8 internal constant REVEALED_MOVE_REFUSED = uint8(4);
-    // Rock, Paper and Scissors (3)
+    // 0 indicates that no move was made.
+    uint8 internal constant REVEALED_MOVE_MISSING = uint8(0);
+    /* 
+     *  Possible moves
+     *  1. Rock
+     *  2. Paper
+     *  3. Scissors
+     */
     uint8 internal constant MAX_POSSIBLE_MOVES = uint8(3);
     IERC20 constant internal WETH_ADDRESS = IERC20(0xc778417E063141139Fce010982780140Aa0cD5Ab);
     
@@ -69,11 +74,11 @@ contract RockPaperScissors {
     * @dev Internal function to tell whether a certain commited move is valid for a given round instance or not. 
     * @notice This function assumes the given round exists.
     * @param _round Round instance to check the commited move of
-    * @param _committedMove commited move to check if valid or not
+    * @param _revealedMove commited move to check if valid or not
     * @return True if the given commited move is valid for the requested round instance, false otherwise.
     */
-    function _isValidCommittedMove(Round storage _round, uint8 _committedMove) internal view returns (bool) {
-        return _committedMove >= REVEALED_MOVE_REFUSED && _committedMove <= _round.maxAllowedMoves;
+    function _isValidRevealedMove(Round storage _round, uint8 _revealedMove) internal view returns (bool) {
+        return _revealedMove > REVEALED_MOVE_MISSING && _revealedMove <= _round.maxAllowedMoves;
     }
 
     /**
@@ -118,17 +123,17 @@ contract RockPaperScissors {
     * @notice Reveal `_committedMove` round of `_player` for round #`_roundId`
     * @param _roundId ID of the round instance to reveal a move of
     * @param _player Address of the player to reveal a move for
-    * @param _committedMove Committed move revealed by the player to be revealed
+    * @param _revealedMove Committed move revealed by the player to be revealed
     * @param _salt Salt to decrypt and validate the committed move of the player
     */
-    function reveal(uint256 _roundId, address _player, uint8 _committedMove, bytes32 _salt) external roundExists(_roundId) {
+    function reveal(uint256 _roundId, address _player, uint8 _revealedMove, bytes32 _salt) external roundExists(_roundId) {
         Round storage round = roundRecords[_roundId];
         CastedMove storage castedMove = round.moves[_player];
-        _checkValidSalt(castedMove, _committedMove, _salt);
-        require(_isValidCommittedMove(round, _committedMove), ERROR_INVALID_COMMITED_MOVE);
+        _checkValidSalt(castedMove, _revealedMove, _salt);
+        require(_isValidRevealedMove(round, _revealedMove), ERROR_INVALID_REVEALED_MOVE);
 
-        castedMove.revealedMove = _committedMove;
-        emit MoveRevealed(_roundId, _player, _committedMove, msg.sender);
+        castedMove.revealedMove = _revealedMove;
+        emit MoveRevealed(_roundId, _player, _revealedMove, msg.sender);
     }
 
      /**
@@ -140,7 +145,7 @@ contract RockPaperScissors {
     function getWinningMove(uint256 _roundId) external view roundExists(_roundId) returns (uint8) {
         Round storage round = roundRecords[_roundId];
         uint8 winningMove = round.winningMove;
-        return winningMove == REVEALED_MOVE_MISSING ? REVEALED_MOVE_REFUSED : winningMove;
+        return winningMove == REVEALED_MOVE_MISSING ? REVEALED_MOVE_MISSING : winningMove;
     }
 
     /**
