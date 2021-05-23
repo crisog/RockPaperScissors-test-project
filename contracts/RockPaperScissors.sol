@@ -13,6 +13,7 @@ contract RockPaperScissors {
     string private constant ERROR_ROUND_DOES_NOT_EXIST = "ERROR_ROUND_DOES_NOT_EXIST";
     string private constant ERROR_ROUND_ALREADY_EXISTS = "ERROR_ROUND_ALREADY_EXISTS";
     string private constant ERROR_ROUND_IS_FULL = "ERROR_ROUND_IS_FULL";
+    string private constant ERROR_ROUND_PLAYER_ALREADY_EXIST = "ERROR_ROUND_PLAYER_ALREADY_EXIST";
     string private constant ERROR_ROUND_PLAYER_DOES_NOT_EXIST = "ERROR_ROUND_PLAYER_DOES_NOT_EXIST";
     string private constant ERROR_MOVE_ALREADY_COMMITTED = "ERROR_MOVE_ALREADY_COMMITTED";
     string private constant ERROR_NOT_ENOUGH_TOKENS = "ERROR_NOT_ENOUGH_TOKENS";
@@ -167,6 +168,7 @@ contract RockPaperScissors {
     */
     function join(uint256 _roundId) external {
         Round storage round = roundRecords[_roundId];
+        require(msg.sender != round.bob, ERROR_ROUND_PLAYER_ALREADY_EXIST);
         require(round.alice == address(0), ERROR_ROUND_IS_FULL);
         require(WAGER_TOKEN.balanceOf(msg.sender) >= round.wagerTokenAmount, ERROR_NOT_ENOUGH_TOKENS);
         
