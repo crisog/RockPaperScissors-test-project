@@ -125,7 +125,7 @@ contract RockPaperScissors {
     * @param _roundId ID of the round instance to commit a move to
     * @param _commitment Hashed committed move to be stored for future reveal
     */
-    function commit(uint256 _roundId, bytes32 _commitment) external payable roundExists(_roundId) {
+    function commit(uint256 _roundId, bytes32 _commitment) external roundExists(_roundId) {
         _ensurePlayerJoined(_roundId, msg.sender);
         
         CastedMove storage castedMove = roundRecords[_roundId].moves[msg.sender];

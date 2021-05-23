@@ -1,0 +1,12 @@
+Tests (needs to be written using Hardhat, pending):
+
+RockPaperScissors (on Rinkeby) - 0x5020567dFBfdF30C8C9fda5e3bd44C42AB04cF98
+
+1. Create a round -> success
+https://rinkeby.etherscan.io/tx/0x06fa94e671ac46cf2e85f0c79e7266dbad8a9a528f2e7df45709a1b7f8d8e2a2
+
+2. Join a round without enough tokens -> fail
+https://rinkeby.etherscan.io/tx/0xd3d6f91c9933bda1554a78b8ba6408f2e2eb388825b862313c7383fa497b0a5e
+
+3. Join a round with enough tokens -> success
+https://rinkeby.etherscan.io/tx/0x2e47a58d67ea5325ca3437a6d87e9df7b9e03df21c2c6cb3c7a36064e3ff9257
