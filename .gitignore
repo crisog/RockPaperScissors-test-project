@@ -1,4 +1,6 @@
 node_modules
+contracts/.flatten
+.env
 
 #Hardhat files
 cache

@@ -35,7 +35,7 @@ contract RockPaperScissors {
     // 4 indicates a draw round.
     uint8 internal constant DRAW_ROUND = uint8(4);
 
-    IERC20 constant internal WAGER_TOKEN = IERC20(0xc778417E063141139Fce010982780140Aa0cD5Ab); // WETH
+    IERC20 constant internal WAGER_TOKEN = IERC20(0x2F363dD061cc8b3411c3C91C0CfAc0Fa1B62F656); // WPOKT on Rinkeby
     
     struct CastedMove {
         bytes32 committedMove;                         // Hash of the move casted by the player

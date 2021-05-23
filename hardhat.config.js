@@ -1,4 +1,5 @@
 require("@nomiclabs/hardhat-ethers");
+require('dotenv').config();
 
 task("hashedMove", "Generates a hashed move")
   .addParam("type", "Type of the move: [1-3] - rock, paper and scissors respectively.")
@@ -13,6 +14,16 @@ task("hashedMove", "Generates a hashed move")
 
 });
 
+task("deploy", "Deploy the contract")
+  .setAction(async (taskArgs, hre) => {
+  
+  const RockPaperScissors = await ethers.getContractFactory("RockPaperScissors");
+  const rockPaperScissors = await RockPaperScissors.deploy();
+
+  console.log("RockPaperScissors deployed to:", rockPaperScissors.address);
+});
+
+
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
@@ -25,6 +36,12 @@ module.exports = {
         runs: 800, // assuming we want to lower user gas costs instead of deployment costs.
       },
     },
+  },
+  networks: {
+    rinkeby: {
+      url: 'https://rinkeby.infura.io/v3/<INFURA_ID>',
+      accounts: [process.env.PRIVATE_KEY]
+    }
   },
   paths: {
     sources: "./contracts",
