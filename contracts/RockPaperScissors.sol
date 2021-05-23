@@ -21,9 +21,9 @@ contract RockPaperScissors {
     string private constant ERROR_INVALID_HASHING_SALT = "ERROR_INVALID_HASHING_SALT";
     string private constant ERROR_INVALID_REVEALED_MOVE = "ERROR_INVALID_REVEALED_MOVE";
 
-    uint8 internal constant ROUND_INITIALIZED = uint8(1);
     // 0 indicates that no move was made.
     uint8 internal constant REVEALED_MOVE_MISSING = uint8(0);
+    
     /* 
      *  Possible moves
      *  1. Rock
@@ -31,6 +31,10 @@ contract RockPaperScissors {
      *  3. Scissors
      */
     uint8 internal constant MAX_POSSIBLE_MOVES = uint8(3);
+    
+    // 4 indicates a draw round.
+    uint8 internal constant DRAW_ROUND = uint8(4);
+
     IERC20 constant internal WAGER_TOKEN = IERC20(0xc778417E063141139Fce010982780140Aa0cD5Ab); // WETH
     
     struct CastedMove {
@@ -39,22 +43,34 @@ contract RockPaperScissors {
     }
     
     struct Round {
-        uint8 initialized;
-        uint8 winningMove;           
-        uint8 playersCount;        
+        address bob;
+        address alice;
+        uint8 winningMove;         
         uint8 maxAllowedMoves; 
-        uint256 wagerTokenAmount;
-        mapping (address => bool) players;
+        uint256 wagerTokenAmount;         
+        uint8 revealedMovesCount;
         mapping (address => CastedMove) moves;      // Mapping of players addresses to their casted move
     }
 
     // Round records indexed by their ID
     mapping (uint256 => Round) internal roundRecords;
 
+    struct Move {
+        uint8 weakTo;
+        uint8 strongTo;
+    }
+    
+    Move[4] internal movesData;
+
     event RoundCreated(uint256 indexed roundId, uint256 wagerAmount);
     event PlayerJoined(uint256 indexed roundId, address indexed player);
     event MoveCommitted(uint256 indexed roundId, address indexed player, bytes32 commitment);
     event MoveRevealed(uint256 indexed roundId, address indexed player, uint8 revealedMove, address revealer);
+
+
+    constructor() {
+        _initializeMoves();
+    }
 
     /**
     * @dev Ensure a certain round exists
@@ -72,7 +88,7 @@ contract RockPaperScissors {
     * @return True if the given round instance was already created, false otherwise
     */
     function _existsRound(Round storage _round) internal view returns (bool) {
-        return _round.initialized != ROUND_INITIALIZED;
+        return _round.bob != address(0);
     }
 
     /**
@@ -95,13 +111,11 @@ contract RockPaperScissors {
         Round storage round = roundRecords[_roundId];
         require(!_existsRound(round), ERROR_ROUND_ALREADY_EXISTS);
 
-        round.initialized = ROUND_INITIALIZED;
+        round.bob = msg.sender;
         round.maxAllowedMoves = MAX_POSSIBLE_MOVES;
         round.wagerTokenAmount = _wagerAmount;
+
         emit RoundCreated(_roundId, _wagerAmount);
-        
-        round.players[msg.sender] = true;
-        round.playersCount += 1;
         emit PlayerJoined(_roundId, msg.sender);
     }
 
@@ -138,7 +152,13 @@ contract RockPaperScissors {
         require(_isValidRevealedMove(round, _revealedMove), ERROR_INVALID_REVEALED_MOVE);
 
         castedMove.revealedMove = _revealedMove;
+        round.revealedMovesCount += 1;
+
         emit MoveRevealed(_roundId, _player, _revealedMove, msg.sender);
+
+        if (round.revealedMovesCount == 2) {
+            // Nothing
+        }
     }
 
     /**
@@ -147,10 +167,10 @@ contract RockPaperScissors {
     */
     function join(uint256 _roundId) external {
         Round storage round = roundRecords[_roundId];
-        require(round.playersCount < 2, ERROR_ROUND_IS_FULL);
+        require(round.alice == address(0), ERROR_ROUND_IS_FULL);
         require(WAGER_TOKEN.balanceOf(msg.sender) >= round.wagerTokenAmount, ERROR_NOT_ENOUGH_TOKENS);
         
-        round.players[msg.sender] = true;
+        round.alice = msg.sender;
         emit PlayerJoined(_roundId, msg.sender);
     }
 
@@ -160,10 +180,10 @@ contract RockPaperScissors {
     */
     function _ensurePlayerJoined(uint256 _roundId, address _player) internal view {
         Round storage round = roundRecords[_roundId];
-        require(round.players[_player], ERROR_ROUND_PLAYER_DOES_NOT_EXIST);
+        require(round.bob == _player || round.alice == _player, ERROR_ROUND_PLAYER_DOES_NOT_EXIST);
     }
 
-     /**
+    /**
     * @dev Get the winner of a round instance. If the winner is missing, that means no one played in
     *      the given round instance.
     * @param _roundId ID of the round instance querying the winning outcome of
@@ -176,16 +196,46 @@ contract RockPaperScissors {
     }
 
     /**
-    * @dev Internal function to check if a move is the last move
-    * @param _roundId ID of the round instance to check
+    * @dev Compute the winner and distribute wagered tokens of a round.
+    * @param _roundId ID of the round instance querying the winning outcome of
     */
-    function _isLastMove(uint256 _roundId) internal view {
+    function computeRound(uint256 _roundId) internal {
         Round storage round = roundRecords[_roundId];
+        CastedMove storage bob = round.moves[round.bob];
+        CastedMove storage alice = round.moves[round.alice];
+        address winner;
 
+        if (movesData[bob.revealedMove].strongTo == alice.revealedMove) {
+            round.winningMove = bob.revealedMove;
+            winner = round.alice;
+        }
+
+        else if (movesData[bob.revealedMove].weakTo == alice.revealedMove) {
+            round.winningMove = alice.revealedMove;
+            winner = round.bob;
+        }
+        
+        if (winner != address(0))
+            WAGER_TOKEN.transferFrom(address(this), winner, round.wagerTokenAmount);
+        else
+            round.winningMove = DRAW_ROUND;
     }
 
-    function computeRound(uint256 _roundId) public roundExists(_roundId) returns (address) {
-        
+    function _initializeMoves() internal {
+        // Rock (1)
+        Move storage rock = movesData[1];
+        rock.weakTo = 2;
+        rock.strongTo = 3;
+
+        // Paper (2)
+        Move storage paper = movesData[2];
+        paper.weakTo = 3;
+        paper.strongTo = 1;
+
+        // Scissors (3)
+        Move storage scissors = movesData[3];
+        scissors.weakTo = 1;
+        scissors.strongTo = 2;
     }
 
     /**
