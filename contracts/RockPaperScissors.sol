@@ -14,8 +14,8 @@ contract RockPaperScissors {
   string private constant ERROR_ROUND_ALREADY_EXISTS =
     'ERROR_ROUND_ALREADY_EXISTS';
   string private constant ERROR_ROUND_IS_FULL = 'ERROR_ROUND_IS_FULL';
-  string private constant ERROR_ROUND_PLAYER_ALREADY_EXIST =
-    'ERROR_ROUND_PLAYER_ALREADY_EXIST';
+  string private constant ERROR_ROUND_PLAYER_ALREADY_EXISTS =
+    'ERROR_ROUND_PLAYER_ALREADY_EXISTS';
   string private constant ERROR_ROUND_PLAYER_DOES_NOT_EXIST =
     'ERROR_ROUND_PLAYER_DOES_NOT_EXIST';
   string private constant ERROR_MOVE_ALREADY_COMMITTED =
@@ -44,9 +44,6 @@ contract RockPaperScissors {
   // 4 indicates a draw round.
   uint8 internal constant DRAW_ROUND = uint8(4);
 
-  IERC20 internal constant WAGER_TOKEN =
-    IERC20(0x2F363dD061cc8b3411c3C91C0CfAc0Fa1B62F656); // WPOKT on Rinkeby
-
   struct CastedMove {
     bytes32 committedMove; // Hash of the move casted by the player
     uint8 revealedMove; // Revealed move submitted by the player
@@ -72,6 +69,8 @@ contract RockPaperScissors {
 
   Move[4] internal movesData;
 
+  IERC20 wagerToken;
+
   event RoundCreated(uint256 indexed roundId, uint256 wagerAmount);
   event PlayerJoined(uint256 indexed roundId, address indexed player);
   event MoveCommitted(
@@ -86,7 +85,8 @@ contract RockPaperScissors {
     address revealer
   );
 
-  constructor() {
+  constructor(address _wagerToken) {
+    wagerToken = IERC20(_wagerToken);
     _initializeMoves();
   }
 
@@ -135,6 +135,10 @@ contract RockPaperScissors {
     Round storage round = roundRecords[_roundId];
     require(!_existsRound(round), ERROR_ROUND_ALREADY_EXISTS);
 
+    require(
+      wagerToken.balanceOf(msg.sender) >= _wagerAmount,
+      ERROR_NOT_ENOUGH_TOKENS
+    );
     round.bob = msg.sender;
     round.maxAllowedMoves = MAX_POSSIBLE_MOVES;
     round.wagerTokenAmount = _wagerAmount;
@@ -160,7 +164,7 @@ contract RockPaperScissors {
       ERROR_MOVE_ALREADY_COMMITTED
     );
 
-    WAGER_TOKEN.transferFrom(
+    wagerToken.transferFrom(
       msg.sender,
       address(this),
       roundRecords[_roundId].wagerTokenAmount
@@ -209,10 +213,10 @@ contract RockPaperScissors {
    */
   function join(uint256 _roundId) external roundExists(_roundId) {
     Round storage round = roundRecords[_roundId];
-    require(msg.sender != round.bob, ERROR_ROUND_PLAYER_ALREADY_EXIST);
+    require(msg.sender != round.bob, ERROR_ROUND_PLAYER_ALREADY_EXISTS);
     require(round.alice == address(0), ERROR_ROUND_IS_FULL);
     require(
-      WAGER_TOKEN.balanceOf(msg.sender) >= round.wagerTokenAmount,
+      wagerToken.balanceOf(msg.sender) >= round.wagerTokenAmount,
       ERROR_NOT_ENOUGH_TOKENS
     );
 
@@ -274,7 +278,7 @@ contract RockPaperScissors {
     }
 
     if (winner != address(0))
-      WAGER_TOKEN.transferFrom(address(this), winner, round.wagerTokenAmount);
+      wagerToken.transferFrom(address(this), winner, round.wagerTokenAmount);
     else round.winningMove = DRAW_ROUND;
   }
 
