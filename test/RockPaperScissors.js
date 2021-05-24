@@ -1,15 +1,12 @@
 const { ethers } = require('hardhat');
 const { waffle } = require('hardhat');
-const { deployMockContract } = waffle;
 const { expect } = require('chai');
-
-const IERC20 = require('../artifacts/contracts/interfaces/IERC20.sol/IERC20.json');
 
 describe('RockPaperScissors contract', function () {
   const roundId = 1;
   const wagerAmount = ethers.utils.parseEther('200');
 
-  let rockPaperScissorsContract, mockERC20;
+  let rockPaperScissorsContract, ERC20Contract;
   let player1, player2;
 
   beforeEach(async () => {
@@ -18,40 +15,41 @@ describe('RockPaperScissors contract', function () {
     const RockPaperScissorsFactory = await ethers.getContractFactory(
       'RockPaperScissors'
     );
-    mockERC20 = await deployMockContract(player1, IERC20.abi);
+    const ERC20Factory = await ethers.getContractFactory('BasicToken');
+    ERC20Contract = await ERC20Factory.deploy();
+
+    ERC20Contract.connect(player1).mint(wagerAmount);
+    ERC20Contract.connect(player2).mint(wagerAmount);
+
     rockPaperScissorsContract = await RockPaperScissorsFactory.deploy(
-      mockERC20.address
+      ERC20Contract.address
+    );
+
+    ERC20Contract.connect(player1).approve(
+      rockPaperScissorsContract.address,
+      wagerAmount
+    );
+    ERC20Contract.connect(player1).approve(
+      rockPaperScissorsContract.address,
+      wagerAmount
     );
   });
 
   it('Should create a round and emit a RoundCreated event', async function () {
-    await mockERC20.mock.balanceOf.returns(ethers.utils.parseEther('200'));
     await expect(rockPaperScissorsContract.create(roundId, wagerAmount))
       .to.emit(rockPaperScissorsContract, 'RoundCreated')
       .withArgs(roundId, wagerAmount);
   });
 
   it('Should create a round and emit a PlayerJoined event', async function () {
-    await mockERC20.mock.balanceOf.returns(ethers.utils.parseEther('200'));
     await expect(rockPaperScissorsContract.create(roundId, wagerAmount))
       .to.emit(rockPaperScissorsContract, 'PlayerJoined')
       .withArgs(roundId, player1.address);
   });
 
   it('Should fail on attempt to join a non-existent round', async function () {
-    await expect(rockPaperScissorsContract.join(roundId)).to.be.revertedWith(
-      'ERROR_ROUND_DOES_NOT_EXIST'
-    );
-  });
-
-  it('Should succeed on attempt to join an existent round', async function () {
-    await mockERC20.mock.balanceOf.returns(ethers.utils.parseEther('200'));
-    await expect(rockPaperScissorsContract.create(roundId, wagerAmount))
-      .to.emit(rockPaperScissorsContract, 'RoundCreated')
-      .withArgs(roundId, wagerAmount);
-
-    await expect(rockPaperScissorsContract.connect(player1).join(roundId))
-      .to.emit(rockPaperScissorsContract, 'PlayerJoined')
-      .withArgs(roundId, player2.address);
+    await expect(
+      rockPaperScissorsContract.connect(player2).join(roundId)
+    ).to.be.revertedWith('ERROR_ROUND_DOES_NOT_EXIST');
   });
 });
