@@ -22,7 +22,10 @@ task('deploy', 'Deploy the contract').setAction(async (taskArgs, hre) => {
   const RockPaperScissors = await ethers.getContractFactory(
     'RockPaperScissors'
   );
-  const rockPaperScissors = await RockPaperScissors.deploy();
+
+  const rockPaperScissors = await RockPaperScissors.deploy(
+    '0x2f363dd061cc8b3411c3c91c0cfac0fa1b62f656' // wPOKT on Rinkeby
+  );
 
   console.log('RockPaperScissors deployed to:', rockPaperScissors.address);
 });

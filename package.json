@@ -7,7 +7,8 @@
     "compile": "npx hardhat compile",
     "test": "npx hardhat test",
     "flatten": "npx hardhat flatten contracts/RockPaperScissors.sol > contracts/.flatten/FlattenedRockPaperScissors.sol",
-    "format": "npx hardhat format"
+    "format": "npx hardhat format",
+    "deploy:rinkeby": "npx hardhat deploy --network rinkeby"
   },
   "keywords": [
     "solidity",

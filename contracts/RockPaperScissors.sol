@@ -139,6 +139,7 @@ contract RockPaperScissors {
       wagerToken.balanceOf(msg.sender) >= _wagerAmount,
       ERROR_NOT_ENOUGH_TOKENS
     );
+    wagerToken.transferFrom(msg.sender, address(this), _wagerAmount);
     round.bob = msg.sender;
     round.maxAllowedMoves = MAX_POSSIBLE_MOVES;
     round.wagerTokenAmount = _wagerAmount;
@@ -162,12 +163,6 @@ contract RockPaperScissors {
     require(
       castedMove.committedMove == bytes32(0),
       ERROR_MOVE_ALREADY_COMMITTED
-    );
-
-    wagerToken.transferFrom(
-      msg.sender,
-      address(this),
-      roundRecords[_roundId].wagerTokenAmount
     );
 
     castedMove.committedMove = _commitment;
@@ -218,6 +213,11 @@ contract RockPaperScissors {
     require(
       wagerToken.balanceOf(msg.sender) >= round.wagerTokenAmount,
       ERROR_NOT_ENOUGH_TOKENS
+    );
+    wagerToken.transferFrom(
+      msg.sender,
+      address(this),
+      roundRecords[_roundId].wagerTokenAmount
     );
 
     round.alice = msg.sender;
