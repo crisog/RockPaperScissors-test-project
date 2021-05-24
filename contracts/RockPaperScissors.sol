@@ -198,7 +198,7 @@ contract RockPaperScissors {
     emit MoveRevealed(_roundId, _player, _revealedMove, msg.sender);
 
     if (round.revealedMovesCount == 2) {
-      // Nothing
+      computeRound(_roundId);
     }
   }
 
