@@ -11,11 +11,12 @@ task('hashedMove', 'Generates a hashed move')
   .setAction(async ({ type: inmoveType }, { ethers }) => {
     const { id: keccak256, solidityKeccak256: soliditySha3 } = ethers.utils;
 
-    const salt = keccak256('4rk0zt1m9');
+    const salt = keccak256(process.env.SALT);
+    console.log(`Salt: ${salt}`);
+
     const move = Number(inmoveType);
     const hashedMove = soliditySha3(['uint8', 'bytes32'], [move, salt]);
-
-    console.log(hashedMove);
+    console.log(`Hashed move: ${hashedMove}`);
   });
 
 task('deploy', 'Deploy the contract').setAction(async (taskArgs, hre) => {
